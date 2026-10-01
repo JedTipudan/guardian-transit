@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Icon } from './Icon';
+import { useMeta } from '../state/MetaContext';
 
 /**
  * Map renderer.
@@ -141,6 +142,9 @@ export function MapCanvas({
   attribution = null,
 }: MapCanvasProps) {
   const [zoom, setZoom] = useState(1);
+  const meta = useMeta();
+  const resolvedTileUrl = tileUrl ?? meta?.maps.tileUrl ?? null;
+  const resolvedAttribution = attribution ?? meta?.maps.attribution ?? null;
 
   // --- Leaflet map (only when tileUrl is provided) ---
   const leafletRef = useRef<HTMLDivElement>(null);
@@ -148,14 +152,14 @@ export function MapCanvas({
   const layersRef = useRef<L.Layer[]>([]);
 
   useEffect(() => {
-    if (!tileUrl || !leafletRef.current) return;
+    if (!resolvedTileUrl || !leafletRef.current) return;
 
     if (!mapRef.current) {
       mapRef.current = L.map(leafletRef.current, {
         zoomControl: true,
         attributionControl: false,
       });
-      L.tileLayer(tileUrl, { attribution: attribution ?? '' }).addTo(mapRef.current);
+      L.tileLayer(resolvedTileUrl, { attribution: resolvedAttribution ?? '' }).addTo(mapRef.current);
     }
 
     const map = mapRef.current;
@@ -204,7 +208,7 @@ export function MapCanvas({
     return () => {
       // layers cleaned up on next run; map persists for the lifetime of the component
     };
-  }, [tileUrl, attribution, pickup, destination, driver, student, trace, markers]);
+  }, [resolvedTileUrl, resolvedAttribution, pickup, destination, driver, student, trace, markers]);
 
   // Destroy Leaflet map when tileUrl is removed or component unmounts
   useEffect(() => {
@@ -288,12 +292,12 @@ export function MapCanvas({
       aria-label={hint ?? 'Trip map'}
     >
       {/* --- Leaflet map (real slippy map when tileUrl is set) ----------- */}
-      {tileUrl ? (
+      {resolvedTileUrl ? (
         <div ref={leafletRef} className="absolute inset-0" />
       ) : null}
 
       {/* --- vector base ------------------------------------------------- */}
-      {!tileUrl ? (
+      {!resolvedTileUrl ? (
         <svg
           viewBox={`0 0 ${MAP_W} ${MAP_H}`}
           preserveAspectRatio="xMidYMid slice"
@@ -368,7 +372,7 @@ export function MapCanvas({
 
       {/* --- label chips (HTML so CSS tokens apply) ---------------------- */}
       <div className="absolute inset-0">
-        {hasPoints && interactive ? chips.map(chipHtml) : null}
+        {hasPoints && interactive && !resolvedTileUrl ? chips.map(chipHtml) : null}
         {!hasPoints && hint ? (
           <div className="absolute inset-0 flex items-center justify-center px-6 text-center">
             <span className="rounded-[12px] bg-white/85 px-4 py-2 text-[12px] text-muted">{hint}</span>
@@ -377,7 +381,7 @@ export function MapCanvas({
       </div>
 
       {/* --- controls ---------------------------------------------------- */}
-      {interactive && !tileUrl ? (
+      {interactive && !resolvedTileUrl ? (
         <div className="absolute right-3 top-1/2 flex -translate-y-1/2 flex-col gap-2 rounded-[8px] bg-white p-1.5 shadow-card">
           <button
             type="button"
@@ -406,8 +410,8 @@ export function MapCanvas({
         </div>
       ) : null}
 
-      {attribution ? (
-        <span className="absolute bottom-1.5 right-2 text-[9px] text-muted/80">{attribution}</span>
+      {resolvedAttribution ? (
+        <span className="absolute bottom-1.5 right-2 text-[9px] text-muted/80">{resolvedAttribution}</span>
       ) : null}
 
       {children}
