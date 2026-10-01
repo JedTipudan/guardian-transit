@@ -56,7 +56,7 @@ export function PublicHeader() {
 
           <div className="flex items-center gap-3">
             <Link to="/login" className="gt-btn gt-btn-secondary hidden sm:inline-flex">
-              Parent Login
+              Login
             </Link>
             <button
               type="button"
@@ -78,7 +78,7 @@ export function PublicHeader() {
               </a>
             ))}
             <Link to="/login" onClick={() => setOpen(false)} className="text-[12px] font-semibold text-primary">
-              Parent Login
+              Login
             </Link>
             <Link to="/student/login" onClick={() => setOpen(false)} className="text-[12px] font-semibold text-muted">
               Student Sign In
