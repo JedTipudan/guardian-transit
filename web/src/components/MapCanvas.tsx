@@ -286,7 +286,7 @@ export function MapCanvas({
 
   return (
     <div
-      className={`relative overflow-hidden rounded-[20px] bg-map ${className}`}
+      className={`relative rounded-[20px] bg-map ${resolvedTileUrl ? '' : 'overflow-hidden'} ${className}`}
       style={{ height }}
       role="img"
       aria-label={hint ?? 'Trip map'}
@@ -371,7 +371,7 @@ export function MapCanvas({
       ) : null}
 
       {/* --- label chips (HTML so CSS tokens apply) ---------------------- */}
-      <div className="absolute inset-0">
+      <div className={`absolute inset-0 ${resolvedTileUrl ? 'pointer-events-none' : ''}`}>
         {hasPoints && interactive && !resolvedTileUrl ? chips.map(chipHtml) : null}
         {!hasPoints && hint ? (
           <div className="absolute inset-0 flex items-center justify-center px-6 text-center">
@@ -404,7 +404,7 @@ export function MapCanvas({
 
       {/* --- freshness --------------------------------------------------- */}
       {freshness ? (
-        <div className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-[8px] bg-white px-2.5 py-[7px]">
+        <div className="pointer-events-none absolute bottom-3 left-3 flex items-center gap-1.5 rounded-[8px] bg-white px-2.5 py-[7px]">
           <span className={`relative inline-block h-1.5 w-1.5 rounded-full ${live ? 'bg-success gt-pulse-dot text-success' : 'bg-muted'}`} />
           <span className="text-[10px] text-muted">{freshness}</span>
         </div>
