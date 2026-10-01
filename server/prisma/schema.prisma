@@ -1,0 +1,644 @@
+// Guardian Transit — Prisma schema
+// PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  STUDENT
+  PARENT
+  DRIVER
+  ADMIN
+}
+
+enum AccountStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
+enum VerificationStatus {
+  PENDING
+  UNDER_REVIEW
+  VERIFIED
+  REQUIRES_ACTION
+  REJECTED
+}
+
+enum VerificationDocType {
+  IDENTITY
+  GOVERNMENT
+  VEHICLE
+  BACKGROUND
+}
+
+enum GuardianConnectionStatus {
+  PENDING
+  ACTIVE
+  DECLINED
+  REVOKED
+}
+
+enum RideStatus {
+  REQUESTED
+  DRIVER_ASSIGNED
+  DRIVER_ARRIVED
+  PIN_VERIFIED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum RideEventType {
+  REQUESTED
+  DRIVER_ASSIGNED
+  DRIVER_DECLINED
+  DRIVER_EN_ROUTE
+  DRIVER_ARRIVED
+  PIN_ATTEMPT_FAILED
+  PIN_VERIFIED
+  TRIP_STARTED
+  LOCATION_UPDATE
+  TRIP_COMPLETED
+  RIDE_CANCELLED
+  SOS_TRIGGERED
+  NOTE
+}
+
+enum NotificationType {
+  RIDE_REQUEST
+  RIDE_ACCEPTED
+  RIDE_ARRIVED
+  RIDE_STARTED
+  RIDE_COMPLETED
+  TRIP_UPDATE
+  PIN_REMINDER
+  GUARDIAN_REQUEST
+  GUARDIAN_CONNECTED
+  VERIFICATION_UPDATE
+  EMERGENCY
+  SAFETY_REPORT
+  REWARD_EARNED
+  SYSTEM
+}
+
+enum EmergencyType {
+  SOS_BUTTON
+  ROUTE_DEVIATION
+  ACCIDENT
+  VEHICLE_BREAKDOWN
+  STUDENT_UNSAFE
+  OTHER
+}
+
+enum EmergencyStatus {
+  ACTIVE
+  ACKNOWLEDGED
+  RESOLVED
+  FALSE_ALARM
+}
+
+enum SafetyReportCategory {
+  DRIVER_BEHAVIOR
+  VEHICLE_CONDITION
+  ROUTE_DEVIATION
+  UNEXPECTED_DELAY
+  PICKUP_OR_DROPOFF_ISSUE
+  HARSH_DRIVING
+  OTHER
+}
+
+enum SafetyReportStatus {
+  NEW
+  UNDER_REVIEW
+  RESOLVED
+}
+
+enum PointReason {
+  RIDE_COMPLETED
+  SIGNUP_BONUS
+  ADMIN_ADJUSTMENT
+}
+
+enum RewardType {
+  FREE_RIDE
+}
+
+enum RewardStatus {
+  ISSUED
+  REDEEMED
+  EXPIRED
+  REVOKED
+}
+
+enum OtpPurpose {
+  LOGIN
+  REGISTRATION
+  PHONE_CHANGE
+}
+
+// ---------------------------------------------------------------------------
+// Identity
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String        @id @default(cuid())
+  role         UserRole
+  status       AccountStatus @default(ACTIVE)
+  firstName    String
+  lastName     String
+  email        String?       @unique
+  phone        String        @unique
+  passwordHash String
+  avatarUrl    String?
+  lastLoginAt  DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  studentProfile   StudentProfile?
+  parentProfile    ParentProfile?
+  driverProfile    DriverProfile?
+  notifications    Notification[]
+  sessions         AuthSession[]
+  reportsFiled     SafetyReport[]        @relation("ReportReporter")
+  reportsAssigned  SafetyReport[]        @relation("ReportAssignee")
+  emergenciesRaised EmergencyEvent[]     @relation("EmergencyRaised")
+  emergenciesHandled EmergencyEvent[]    @relation("EmergencyHandled")
+  connectionsRequested GuardianConnection[] @relation("ConnectionRequester")
+  guardianLinks         GuardianConnection[] @relation("ConnectionGuardian")
+  driverVerificationsReviewed DriverVerification[] @relation("VerificationReviewer")
+  vehicleVerificationsReviewed VehicleVerification[] @relation("VehicleVerificationReviewer")
+  configUpdates    SystemConfig[]
+  safetyReportsAuthored SafetyReport[]   @relation("ReportAuthored")
+
+  @@index([role, status])
+  @@index([createdAt])
+}
+
+model AuthSession {
+  id           String   @id @default(cuid())
+  userId       String
+  tokenHash    String   @unique
+  userAgent    String?
+  ip           String?
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model OtpCode {
+  id        String     @id @default(cuid())
+  phone     String
+  codeHash  String
+  purpose   OtpPurpose
+  attempts  Int        @default(0)
+  expiresAt DateTime
+  consumedAt DateTime?
+  createdAt DateTime   @default(now())
+
+  @@index([phone, purpose, createdAt])
+  @@index([expiresAt])
+}
+
+model StudentProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  studentCode String   @unique
+  school      String
+  grade       String
+  homeAddress String
+  homeLat     Float?
+  homeLng     Float?
+  photoUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rides         Ride[]
+  connections   GuardianConnection[]
+  points        GuardianPoint[]
+  rewards       Reward[]
+  savedLocations SavedLocation[]
+
+  @@index([school])
+}
+
+model ParentProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  preferredContact String  @default("PHONE")
+  address         String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rides      Ride[]              @relation("RideParent")
+
+  @@index([preferredContact])
+}
+
+model DriverProfile {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  licenseNumber         String   @unique
+  licenseExpiry         DateTime
+  licenseClass          String?
+  address               String?
+  rating                Float    @default(0)
+  totalTrips            Int      @default(0)
+  completedTrips        Int      @default(0)
+  isOnline              Boolean  @default(false)
+  backgroundCheckStatus VerificationStatus @default(PENDING)
+  overallStatus         VerificationStatus @default(PENDING)
+  verifiedAt            DateTime?
+  lat                   Float?
+  lng                   Float?
+  lastLocationAt        DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicles      Vehicle[]
+  verifications DriverVerification[]
+  rides         Ride[]
+  emergencies   EmergencyEvent[]
+
+  @@index([isOnline, overallStatus])
+  @@index([lastLocationAt])
+}
+
+// ---------------------------------------------------------------------------
+// Vehicles & verification workflow
+// ---------------------------------------------------------------------------
+
+model Vehicle {
+  id          String             @id @default(cuid())
+  driverId    String
+  nickname    String             @default("BaoBao")
+  make        String
+  model       String
+  color       String
+  plateNumber String             @unique
+  capacity    Int                @default(4)
+  year        Int?
+  photoUrl    String?
+  status      VerificationStatus @default(PENDING)
+  isActive    Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  driver        DriverProfile        @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  verifications VehicleVerification[]
+  rides         Ride[]
+
+  @@index([driverId, status])
+}
+
+model DriverVerification {
+  id           String             @id @default(cuid())
+  driverId     String
+  docType      VerificationDocType
+  status       VerificationStatus @default(PENDING)
+  reference    String?
+  documentUrl  String?
+  notes        String?
+  submittedAt  DateTime           @default(now())
+  reviewedAt   DateTime?
+  reviewedById String?
+  expiresAt    DateTime?
+
+  driver       DriverProfile @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  reviewer     User?         @relation("VerificationReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@unique([driverId, docType])
+  @@index([status])
+}
+
+model VehicleVerification {
+  id           String             @id @default(cuid())
+  vehicleId    String
+  docType      String
+  status       VerificationStatus @default(PENDING)
+  reference    String?
+  documentUrl  String?
+  notes        String?
+  submittedAt  DateTime           @default(now())
+  reviewedAt   DateTime?
+  reviewedById String?
+
+  vehicle      Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  reviewer     User?   @relation("VehicleVerificationReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@unique([vehicleId, docType])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Guardian connections
+// ---------------------------------------------------------------------------
+
+model GuardianConnection {
+  id             String                  @id @default(cuid())
+  guardianUserId String
+  studentId      String
+  status         GuardianConnectionStatus @default(PENDING)
+  requestedById  String
+  note           String?
+  createdAt      DateTime                @default(now())
+  respondedAt    DateTime?
+  revokedAt      DateTime?
+
+  guardian User          @relation("ConnectionGuardian", fields: [guardianUserId], references: [id], onDelete: Cascade)
+  student  StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  requester User          @relation("ConnectionRequester", fields: [requestedById], references: [id], onDelete: Cascade)
+
+  @@unique([guardianUserId, studentId])
+  @@index([studentId, status])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Rides
+// ---------------------------------------------------------------------------
+
+model Ride {
+  id              String     @id @default(cuid())
+  code            String     @unique
+  studentId       String
+  parentId        String?
+  driverId        String
+  vehicleId       String
+  status          RideStatus @default(REQUESTED)
+
+  pickupLabel     String
+  pickupAddress   String
+  pickupLat       Float
+  pickupLng       Float
+  destinationLabel String
+  destinationAddress String
+  destinationLat  Float
+  destinationLng  Float
+
+  fare            Decimal    @default(0) @db.Decimal(10, 2)
+  distanceKm      Float?
+  durationMin     Int?
+
+  pinHash         String?
+  pinFailedAttempts Int      @default(0)
+  pinLockedUntil  DateTime?
+
+  requestedAt     DateTime   @default(now())
+  acceptedAt      DateTime?
+  arrivedAt       DateTime?
+  verifiedAt      DateTime?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  cancelledAt     DateTime?
+  cancelReason    String?
+  cancelRequestedBy UserRole?
+
+  rating          Int?
+  reviewNote      String?
+
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  student     StudentProfile @relation(fields: [studentId], references: [id])
+  parent      ParentProfile? @relation("RideParent", fields: [parentId], references: [id])
+  driver      DriverProfile  @relation(fields: [driverId], references: [id])
+  vehicle     Vehicle        @relation(fields: [vehicleId], references: [id])
+  locations   RideLocation[]
+  events       RideEvent[]
+  notifications Notification[]
+  emergencies  EmergencyEvent[]
+  reports      SafetyReport[]
+  point        GuardianPoint?
+  rewardRedemptions RewardRedemption[]
+  reward       Reward?       @relation("RewardFreeRide")
+
+  @@index([studentId, status])
+  @@index([driverId, status])
+  @@index([status, requestedAt])
+  @@index([requestedAt])
+}
+
+model RideLocation {
+  id         String   @id @default(cuid())
+  rideId     String
+  lat        Float
+  lng        Float
+  speedKph   Float?
+  heading    Float?
+  accuracyM  Float?
+  source     String   @default("gps")
+  recordedAt DateTime @default(now())
+
+  ride Ride @relation(fields: [rideId], references: [id], onDelete: Cascade)
+
+  @@index([rideId, recordedAt])
+}
+
+model RideEvent {
+  id        String        @id @default(cuid())
+  rideId    String
+  type      RideEventType
+  message   String
+  meta      Json?
+  actorId   String?
+  createdAt DateTime      @default(now())
+
+  ride Ride @relation(fields: [rideId], references: [id], onDelete: Cascade)
+
+  @@index([rideId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Notifications
+// ---------------------------------------------------------------------------
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String
+  data      Json?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ride  Ride?  @relation(fields: [rideId], references: [id], onDelete: Cascade)
+  rideId String?
+
+  @@index([userId, readAt, createdAt])
+  @@index([userId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Emergency & safety
+// ---------------------------------------------------------------------------
+
+model EmergencyEvent {
+  id              String         @id @default(cuid())
+  raisedById      String
+  driverId        String?
+  rideId          String?
+  type            EmergencyType
+  message         String?
+  lat             Float?
+  lng             Float?
+  hotlineNumber   String?
+  hotlineLabel    String?
+  guardianContact String?
+  sharedWithGuardian Boolean     @default(false)
+  status          EmergencyStatus @default(ACTIVE)
+  acknowledgedById String?
+  resolutionNote  String?
+  createdAt       DateTime       @default(now())
+  acknowledgedAt  DateTime?
+  resolvedAt      DateTime?
+
+  raisedBy   User          @relation("EmergencyRaised", fields: [raisedById], references: [id], onDelete: Cascade)
+  driver     DriverProfile? @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  ride       Ride?         @relation(fields: [rideId], references: [id], onDelete: SetNull)
+  handledBy  User?         @relation("EmergencyHandled", fields: [acknowledgedById], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([rideId])
+}
+
+model SafetyReport {
+  id           String             @id @default(cuid())
+  reporterId   String
+  authoredById String?
+  rideId       String?
+  category     SafetyReportCategory
+  subject      String
+  description  String
+  severity     String             @default("MEDIUM")
+  status       SafetyReportStatus @default(NEW)
+  assignedToId String?
+  resolution   String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  resolvedAt   DateTime?
+
+  reporter   User           @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  authoredBy User?          @relation("ReportAuthored", fields: [authoredById], references: [id], onDelete: SetNull)
+  assignedTo User?          @relation("ReportAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  ride       Ride?          @relation(fields: [rideId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([category])
+  @@index([rideId])
+}
+
+// ---------------------------------------------------------------------------
+// Guardian points & rewards
+// ---------------------------------------------------------------------------
+
+model GuardianPoint {
+  id           String      @id @default(cuid())
+  studentId    String
+  rideId       String?     @unique
+  delta        Int
+  reason       PointReason
+  balanceAfter Int
+  note         String?
+  createdAt    DateTime    @default(now())
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  ride    Ride?          @relation(fields: [rideId], references: [id], onDelete: SetNull)
+
+  @@index([studentId, createdAt])
+}
+
+model Reward {
+  id           String      @id @default(cuid())
+  studentId    String
+  type         RewardType  @default(FREE_RIDE)
+  title        String      @default("1 FREE RIDE")
+  costPoints   Int         @default(50)
+  batchKey     String
+  status       RewardStatus @default(ISSUED)
+  code         String      @unique
+  issuedAt     DateTime    @default(now())
+  expiresAt    DateTime?
+  redeemedAt   DateTime?
+  revokedAt    DateTime?
+
+  student      StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  freeRideFor  Ride?          @relation("RewardFreeRide", fields: [freeRideForRideId], references: [id], onDelete: SetNull)
+  freeRideForRideId String?   @unique
+  redemptions  RewardRedemption[]
+
+  @@unique([studentId, batchKey])
+  @@index([studentId, status])
+}
+
+model RewardRedemption {
+  id        String   @id @default(cuid())
+  rewardId  String
+  rideId    String
+  value     Decimal  @default(0) @db.Decimal(10, 2)
+  createdAt DateTime @default(now())
+
+  reward Reward @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+  ride   Ride   @relation(fields: [rideId], references: [id], onDelete: Cascade)
+
+  @@unique([rewardId, rideId])
+  @@index([rideId])
+}
+
+// ---------------------------------------------------------------------------
+// Configuration
+// ---------------------------------------------------------------------------
+
+model SystemConfig {
+  key         String   @id
+  value       Json
+  label       String
+  description String?
+  group       String   @default("general")
+  updatedById String?
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  updatedBy User? @relation(fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([group])
+}
+
+/// Frequently used pickup / destination points for a student.
+model SavedLocation {
+  id        String   @id @default(cuid())
+  studentId String
+  kind      String   @default("OTHER")
+  label     String
+  address   String
+  lat       Float
+  lng       Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, kind])
+}

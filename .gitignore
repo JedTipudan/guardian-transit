@@ -1,0 +1,37 @@
+node_modules/
+dist/
+build/
+coverage/
+
+# Environment — never commit real secrets
+.env
+.env.*
+!.env.example
+!**/.env.example
+server/.env
+web/.env
+*.local
+
+# Prisma
+server/prisma/migrations/**/migration_lock.toml
+
+# Logs & OS
+*.log
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+
+# PWA / Vite
+web/dev-dist/
+web/dist-ssr/
+
+# Uploaded documents
+server/uploads/
