@@ -96,7 +96,7 @@ export async function findSessionByRefreshToken(refreshToken: string) {
 
 const baseCookie = {
   httpOnly: true,
-  sameSite: 'lax' as const,
+  sameSite: config.isProd ? ('none' as const) : ('lax' as const),
   secure: config.isProd,
 };
 
