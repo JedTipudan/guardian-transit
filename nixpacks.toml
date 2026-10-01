@@ -6,8 +6,8 @@ cmds = ["npm install"]
 
 [phases.build]
 cmds = [
-  "npm run build --workspace server",
-  "npx prisma generate --schema=server/prisma/schema.prisma"
+  "npx prisma generate --schema=server/prisma/schema.prisma",
+  "npm run build --workspace server"
 ]
 
 [start]
