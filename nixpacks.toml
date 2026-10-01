@@ -6,9 +6,9 @@ cmds = ["npm install"]
 
 [phases.build]
 cmds = [
-  "npx prisma generate --schema=server/prisma/schema.prisma",
-  "npm run build --workspace server"
+  "cd server && npx prisma generate",
+  "cd server && npx tsc -p tsconfig.json"
 ]
 
 [start]
-cmd = "npx prisma migrate deploy --schema=server/prisma/schema.prisma && node server/dist/src/index.js"
+cmd = "cd server && npx prisma migrate deploy && node dist/src/index.js"
