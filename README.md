@@ -10,11 +10,15 @@ Guardian Transit connects students, parents/guardians, and verified drivers for 
 
 - **PIN-verified pickups** — a one-time PIN is generated per ride; the driver must enter it before the trip starts
 - **Live trip tracking** — real-time location sharing via WebSocket, visible only to the connected guardian during an active ride
+- **Real map** — Leaflet.js + OpenStreetMap tiles with live driver/student markers and route trace
 - **Driver verification workflow** — identity, government ID, background check, and vehicle documents reviewed by admins before a driver goes online
 - **Guardian connections** — parents link to a student and receive ride notifications and live location access
 - **Guardian Points & Rewards** — students earn 1 point per completed ride; 50 points unlock a free ride
 - **Emergency & safety** — SOS button, emergency hotlines, safety reports, and admin incident management
 - **Admin dashboard** — user management, driver verifications, ride oversight, safety reports, and system config
+- **PWA** — installable on Android/iOS; in-app install banner with `beforeinstallprompt` support
+- **Dark mode** — persisted to `localStorage`, toggled from every shell layout
+- **Responsive layouts** — student shell adapts from mobile PWA column to full desktop sidebar at `md+`
 
 ---
 
@@ -27,7 +31,7 @@ Guardian Transit connects students, parents/guardians, and verified drivers for 
 | Database | PostgreSQL 16 · Prisma ORM |
 | Auth | JWT (access + refresh tokens) · bcrypt · OTP via SMS |
 | Frontend | React 19 · Vite · Tailwind CSS v4 · PWA |
-| Maps | OpenStreetMap / OSRM (configurable) |
+| Maps | Leaflet.js · OpenStreetMap tiles · OSRM routing · Nominatim geocoding |
 
 ---
 
@@ -45,11 +49,11 @@ GuardianTransit/
 │       ├── middleware/      # Auth guard, rate limiting
 │       ├── routes/          # REST API routes
 │       └── services/        # Ride logic, SMS, system config
-└── web/                     # React SPA
+└── web/                     # React SPA / PWA
     └── src/
-        ├── components/      # Shared UI, map, SOS modal
+        ├── components/      # Shared UI, MapCanvas (Leaflet), SOS modal, InstallBanner
         ├── pages/           # Student, parent, driver, admin views
-        ├── state/           # Auth, booking, notifications contexts
+        ├── state/           # Auth, booking, notifications, theme contexts
         └── lib/             # API client, socket, types
 ```
 
@@ -76,12 +80,12 @@ CREATE DATABASE guardian_transit OWNER guardian;
 
 ### 2. Configure environment
 
-The server already has a `.env` at `server/.env`. The root `.env.example` documents all variables. Key values:
+Copy `.env.example` to `server/.env` and fill in the key values:
 
 ```env
 DATABASE_URL=postgresql://guardian:guardian_change_me@127.0.0.1:5432/guardian_transit
 AUTH_SECRET=<long-random-string>   # openssl rand -hex 48
-SMS_PROVIDER=dev                   # logs OTPs to console in dev
+SMS_PROVIDER=dev                   # OTP is always 123456 in dev — no SMS needed
 MAP_PROVIDER=osrm                  # free, no API key needed
 ```
 
@@ -129,7 +133,7 @@ Seeded automatically by `npm run db:seed`:
 | Driver (pending) | paolo@driver.test | +639175550203 | Driver123 |
 | Admin | admin@guardian.test | +639175550100 | Admin1234 |
 
-> OTPs are printed to the server console when `SMS_PROVIDER=dev`.
+> **OTP in dev mode** — the verification code is always `123456`. The OTP page shows a blue hint banner when `SMS_PROVIDER=dev`. In production with a real SMS provider the hint is hidden and a random code is sent.
 
 ---
 
@@ -199,13 +203,22 @@ The server exposes a Socket.IO namespace at `/socket.io`. Clients authenticate w
 | `ACCESS_TOKEN_TTL` | `15m` | Access token lifetime |
 | `REFRESH_TOKEN_TTL_DAYS` | `30` | Refresh token lifetime |
 | `SMS_PROVIDER` | `dev` | `dev` · `log` · `twilio` · `custom` |
+| `SMS_PROVIDER_KEY` | — | Twilio Account SID (or custom webhook URL) |
+| `SMS_PROVIDER_SECRET` | — | Twilio Auth Token (or custom bearer token) |
+| `SMS_FROM_NUMBER` | `GuardianTransit` | Sender ID / number |
 | `MAP_PROVIDER` | `osrm` | `osrm` · `mapbox` · `google` · `here` |
+| `MAP_TILE_URL` | OSM tiles | Leaflet tile URL template `{z}/{x}/{y}` |
 | `MAP_ROUTING_URL` | OSRM public | Routing engine base URL |
 | `MAP_GEOCODE_URL` | Nominatim | Geocoding base URL |
+| `MAP_ATTRIBUTION` | © OpenStreetMap | Attribution string shown on map |
 | `OTP_TTL_SECONDS` | `300` | OTP expiry |
+| `OTP_LENGTH` | `6` | OTP digit count |
+| `OTP_MAX_ATTEMPTS` | `5` | Max wrong attempts before lockout |
+| `OTP_RESEND_COOLDOWN_SECONDS` | `30` | Minimum wait between resend requests |
 | `BCRYPT_ROUNDS` | `10` | Password hashing cost |
 | `RATE_LIMIT_MAX` | `300` | Requests per 15 min window |
 | `AUTH_RATE_LIMIT_MAX` | `10` | Auth requests per 15 min window |
+| `CORS_ORIGINS` | `http://localhost:5173` | Comma-separated allowed origins |
 
 ---
 
@@ -227,24 +240,85 @@ REQUESTED → DRIVER_ASSIGNED → DRIVER_ARRIVED → PIN_VERIFIED → IN_PROGRES
                                                                            ↘ CANCELLED / NO_SHOW
 ```
 
-1. Student (or parent) books a ride and selects a verified driver
-2. Driver accepts → status moves to `DRIVER_ASSIGNED`
+1. Student books a ride and selects a verified driver
+2. Driver accepts → `DRIVER_ASSIGNED`
 3. Driver arrives at pickup → `DRIVER_ARRIVED`
-4. Driver enters the student's PIN → `PIN_VERIFIED`
-5. Driver starts the trip → `IN_PROGRESS` (live location sharing begins)
+4. Driver enters the student's PIN shown in the student app → `PIN_VERIFIED`
+5. Driver starts the trip → `IN_PROGRESS` (live Leaflet map + location sharing begins)
 6. Driver marks arrival → `COMPLETED` (1 Guardian Point awarded)
 
 ---
 
-## Production Deployment
+## Layouts
 
-1. Set `NODE_ENV=production` and a strong `AUTH_SECRET`
-2. Run `npm run build` to compile TypeScript and bundle the frontend
-3. Run `npm run db:deploy` (instead of `db:migrate`) to apply migrations without prompts
-4. Serve the compiled API with `npm run start`
-5. Serve `web/dist` from a static host or reverse proxy (Nginx, Caddy, etc.)
-6. Point `CORS_ORIGINS` to your production frontend domain
-7. Configure `SMS_PROVIDER=twilio` with real credentials for OTP delivery
+| Role | Mobile (< md) | Desktop (md+) |
+|---|---|---|
+| **Student** | Centered 480 px PWA column · bottom tab bar | Full-width · left sidebar (lg) · bottom tabs (md) |
+| **Parent** | Responsive card layout · bottom tabs | Full-width · left sidebar |
+| **Driver** | Bottom tab bar | Left sidebar |
+| **Admin** | Bottom tab bar | Left sidebar |
+
+---
+
+## PWA
+
+The app is fully installable as a Progressive Web App.
+
+- **Android Chrome** — the in-app install banner appears automatically via `beforeinstallprompt`
+- **iOS Safari** — use Share → Add to Home Screen
+- Icons: `web/public/icons/icon-192.png` and `icon-512.png`
+- Service worker: Workbox via `vite-plugin-pwa` (`registerType: autoUpdate`)
+- Offline: API calls are `NetworkOnly`; shell assets are precached
+
+---
+
+## Dark Mode
+
+Toggled from the header of every shell layout. Preference is saved to `localStorage` under the key `gt_theme`. The `html.dark` class is applied to `document.documentElement` and all CSS overrides use `html.dark` selectors for specificity over Tailwind utilities.
+
+---
+
+## Production Deployment (Railway + Vercel)
+
+### Backend — Railway
+
+**Build command:**
+```
+npm install && cd server && npx prisma generate && npx tsc -p tsconfig.json
+```
+
+**Start command:**
+```
+cd server && npx prisma migrate deploy && npx prisma db seed && node dist/src/index.js
+```
+
+**Required environment variables on Railway:**
+
+```env
+NODE_ENV=production
+DATABASE_URL=<Railway PostgreSQL URL>
+AUTH_SECRET=<openssl rand -hex 48>
+CORS_ORIGINS=https://<your-vercel-domain>.vercel.app
+SMS_PROVIDER=dev          # change to twilio when ready
+MAP_PROVIDER=osrm
+```
+
+### Frontend — Vercel
+
+**Build command:** `npm run build` (run from `web/`)  
+**Output directory:** `web/dist`
+
+**Required environment variables on Vercel:**
+
+```env
+VITE_API_URL=https://<your-railway-domain>.up.railway.app
+```
+
+> The `VITE_API_URL` must include `https://` — omitting the protocol causes all API requests to fail.
+
+### Cross-domain cookies
+
+Cookies use `sameSite: 'none'` + `secure: true` in production so the Vercel frontend can authenticate against the Railway backend across domains.
 
 ---
 
