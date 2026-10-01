@@ -8,6 +8,7 @@ import { BookingProvider } from './state/BookingContext';
 import { ThemeProvider } from './state/ThemeContext';
 import { RequireAuth, RedirectIfAuthed } from './components/Guards';
 import { PageLoader } from './components/ui';
+import { InstallBanner } from './components/InstallBanner';
 import { PublicLayout } from './components/layout/PublicLayout';
 import { ParentShell } from './components/layout/ParentShell';
 import { StudentShell } from './components/layout/StudentShell';
@@ -101,6 +102,7 @@ export default function App() {
           <NotificationsProvider>
             <ToastProvider>
               <BookingProvider>
+                <InstallBanner />
                 <Routes>
                   {/* ---------------- Public ---------------- */}
                   <Route element={<PublicLayout />}>
