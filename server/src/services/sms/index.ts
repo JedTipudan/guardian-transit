@@ -38,7 +38,8 @@ const devProvider: SmsProvider = {
 };
 
 export function recentDevMessages(phone?: string): Array<{ to: string; body: string; at: number }> {
-  if (config.isProd) return [];
+  // Block in production UNLESS the operator has explicitly chosen the dev SMS provider
+  if (config.isProd && config.sms.provider !== 'dev') return [];
   const list = phone ? devStore.filter((m) => m.to.includes(phone)) : devStore;
   return list.slice(-10).reverse();
 }

@@ -1,4 +1,6 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { Icon } from './Icon';
 
 /**
@@ -140,6 +142,78 @@ export function MapCanvas({
 }: MapCanvasProps) {
   const [zoom, setZoom] = useState(1);
 
+  // --- Leaflet map (only when tileUrl is provided) ---
+  const leafletRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const layersRef = useRef<L.Layer[]>([]);
+
+  useEffect(() => {
+    if (!tileUrl || !leafletRef.current) return;
+
+    if (!mapRef.current) {
+      mapRef.current = L.map(leafletRef.current, {
+        zoomControl: true,
+        attributionControl: false,
+      });
+      L.tileLayer(tileUrl, { attribution: attribution ?? '' }).addTo(mapRef.current);
+    }
+
+    const map = mapRef.current;
+
+    // Remove previous dynamic layers
+    for (const layer of layersRef.current) map.removeLayer(layer);
+    layersRef.current = [];
+
+    const points: L.LatLngExpression[] = [];
+
+    const addMarker = (pos: LatLng, color: string, label: string) => {
+      const icon = L.divIcon({
+        className: '',
+        html: `<div style="background:${color};color:#fff;padding:2px 7px;border-radius:8px;font-size:11px;font-weight:600;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.25)">${label}</div>`,
+        iconAnchor: [0, 0],
+      });
+      const m = L.marker([pos.lat, pos.lng], { icon }).addTo(map);
+      layersRef.current.push(m);
+      points.push([pos.lat, pos.lng]);
+    };
+
+    if (pickup) addMarker(pickup, '#172B45', pickup.label ?? 'Pickup');
+    if (destination) addMarker(destination, '#2463EB', destination.label ?? 'Destination');
+    if (student) addMarker(student, '#102846', student.label ?? 'Student');
+    if (driver) addMarker(driver, '#2463EB', driver.label ?? 'Driver');
+    for (const m of markers) addMarker(m, m.kind === 'alert' ? '#CC3344' : '#172B45', m.label);
+
+    if (trace.length >= 2) {
+      const poly = L.polyline(trace.map((p) => [p.lat, p.lng] as L.LatLngExpression), {
+        color: '#102846',
+        weight: 3,
+        dashArray: '10 8',
+        opacity: 0.55,
+      }).addTo(map);
+      layersRef.current.push(poly);
+    }
+
+    if (points.length > 0) {
+      map.fitBounds(L.latLngBounds(points), { padding: [40, 40], maxZoom: 16 });
+    } else if (!map.getCenter().equals([0, 0])) {
+      // keep current view
+    } else {
+      map.setView([14.5995, 120.9842], 13); // Manila default
+    }
+
+    return () => {
+      // layers cleaned up on next run; map persists for the lifetime of the component
+    };
+  }, [tileUrl, attribution, pickup, destination, driver, student, trace, markers]);
+
+  // Destroy Leaflet map when tileUrl is removed or component unmounts
+  useEffect(() => {
+    return () => {
+      mapRef.current?.remove();
+      mapRef.current = null;
+    };
+  }, []);
+
   const allPoints = useMemo<LatLng[]>(() => {
     const list: LatLng[] = [];
     if (pickup) list.push(pickup);
@@ -213,16 +287,9 @@ export function MapCanvas({
       role="img"
       aria-label={hint ?? 'Trip map'}
     >
-      {/* --- raster tiles (optional provider) ---------------------------- */}
+      {/* --- Leaflet map (real slippy map when tileUrl is set) ----------- */}
       {tileUrl ? (
-        <div
-          className="absolute inset-0 opacity-90"
-          style={{
-            backgroundImage: `url(${tileUrl})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        />
+        <div ref={leafletRef} className="absolute inset-0" />
       ) : null}
 
       {/* --- vector base ------------------------------------------------- */}
@@ -310,7 +377,7 @@ export function MapCanvas({
       </div>
 
       {/* --- controls ---------------------------------------------------- */}
-      {interactive ? (
+      {interactive && !tileUrl ? (
         <div className="absolute right-3 top-1/2 flex -translate-y-1/2 flex-col gap-2 rounded-[8px] bg-white p-1.5 shadow-card">
           <button
             type="button"

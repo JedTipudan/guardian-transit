@@ -3,16 +3,19 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button, Field, TextField, Notice } from '../../components/ui';
 import { Icon } from '../../components/Icon';
 import { api, errorMessage } from '../../lib/api';
+import { useAuth } from '../../state/AuthContext';
+import { roleHome } from '../../components/Guards';
 import { useDocumentTitle } from '../../lib/hooks';
 
 type Role = 'STUDENT' | 'PARENT' | 'DRIVER';
 
 interface RegisterPayload {
-  userId: string;
-  phone: string;
+  userId?: string;
+  phone?: string;
   requiresOtp: boolean;
-  expiresInSeconds: number;
-  resendAfterSeconds: number;
+  expiresInSeconds?: number;
+  resendAfterSeconds?: number;
+  user?: import('../../lib/types').User;
 }
 
 const roleOptions: { value: Role; label: string; blurb: string }[] = [
@@ -24,6 +27,7 @@ const roleOptions: { value: Role; label: string; blurb: string }[] = [
 export default function RegisterPage() {
   useDocumentTitle('Create account · Guardian Transit');
   const navigate = useNavigate();
+  const { setUser } = useAuth();
 
   const [role, setRole] = useState<Role>('PARENT');
   const [form, setForm] = useState({
@@ -115,6 +119,12 @@ export default function RegisterPage() {
             }
           : {}),
       });
+
+      if (!payload.requiresOtp && payload.user) {
+        setUser(payload.user);
+        navigate(roleHome[payload.user.role], { replace: true });
+        return;
+      }
 
       navigate('/verify-otp', {
         replace: true,

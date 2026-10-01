@@ -1,4 +1,5 @@
 import { Router, type Request } from 'express';
+import crypto from 'crypto';
 import { z } from 'zod';
 import type { UserRole } from '@prisma/client';
 import { prisma } from '../lib/prisma';
@@ -24,9 +25,11 @@ import {
   signAccessToken,
 } from '../lib/tokens';
 import { authLimiter, otpLimiter } from '../middleware/rateLimit';
+import { recentDevMessages } from '../services/sms/index';
 import { requireAuth } from '../middleware/auth';
 import { sendOk, sendCreated } from '../lib/http';
 import { toSafeUser } from '../types';
+import config from '../config/env';
 
 const router = Router();
 
@@ -203,6 +206,23 @@ router.post(
       }
     }
 
+    // In dev SMS mode skip OTP entirely — activate immediately and open a session.
+    if (config.sms.provider === 'dev') {
+      const activated = await prisma.user.update({
+        where: { id: user.id },
+        data: { status: 'ACTIVE', lastLoginAt: new Date() },
+        include: {
+          studentProfile: true,
+          parentProfile: true,
+          driverProfile: { include: { vehicles: true, verifications: true } },
+        },
+      });
+      const session = await createSession(activated.id, activated.role, sessionMeta(req));
+      setAuthCookies(res, session.accessToken, session.refreshToken, session.refreshExpiresAt);
+      sendCreated(res, { requiresOtp: false, user: toSafeUser(activated) });
+      return;
+    }
+
     const otp = await issueOtp(body.phone, 'REGISTRATION', { name: body.firstName });
 
     sendCreated(res, {
@@ -226,6 +246,33 @@ async function nextStudentCode(): Promise<string> {
 // ---------------------------------------------------------------------------
 // OTP
 // ---------------------------------------------------------------------------
+
+router.get(
+  '/otp/dev-hint',
+  asyncHandler(async (req, res) => {
+    if (config.sms.provider !== 'dev') throw notFound('Not available.');
+    const rawPhone = String(req.query.phone ?? '');
+    const phone = normalizePhone(rawPhone);
+    // Read directly from DB — survives server restarts unlike the in-memory devStore
+    const record = await prisma.otpCode.findFirst({
+      where: { phone, consumedAt: null, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!record) throw notFound('No active code.');
+    // Brute-force the 6-digit space to recover the plaintext (only in dev mode)
+    const len = config.otp.length;
+    const max = Math.pow(10, len);
+    for (let i = 0; i < max; i++) {
+      const candidate = String(i).padStart(len, '0');
+      const hash = crypto.createHmac('sha256', config.authSecret).update(`${phone}:${candidate}`).digest('hex');
+      if (crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(record.codeHash, 'hex'))) {
+        return sendOk(res, { code: candidate });
+      }
+    }
+    throw notFound('Could not recover code.');
+  }),
+);
+
 
 const otpRequestSchema = z.object({
   phone: phoneSchema,

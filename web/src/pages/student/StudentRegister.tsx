@@ -3,14 +3,17 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Icon } from '../../components/Icon';
 import { Button, Field, Notice, TextField } from '../../components/ui';
 import { api, errorMessage } from '../../lib/api';
+import { useAuth } from '../../state/AuthContext';
+import { roleHome } from '../../components/Guards';
 import { useDocumentTitle } from '../../lib/hooks';
 
 interface RegisterPayload {
-  userId: string;
-  phone: string;
+  userId?: string;
+  phone?: string;
   requiresOtp: boolean;
-  expiresInSeconds: number;
-  resendAfterSeconds: number;
+  expiresInSeconds?: number;
+  resendAfterSeconds?: number;
+  user?: import('../../lib/types').User;
 }
 
 /** Mirrors the server's password policy (server/src/lib/password.ts). */
@@ -32,6 +35,7 @@ type FormErrors = Partial<Record<
 export default function StudentRegister() {
   useDocumentTitle('Create student account · Guardian Transit');
   const navigate = useNavigate();
+  const { setUser } = useAuth();
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -88,6 +92,12 @@ export default function StudentRegister() {
         grade: grade.trim(),
         homeAddress: homeAddress.trim(),
       });
+
+      if (!payload.requiresOtp && payload.user) {
+        setUser(payload.user);
+        navigate(roleHome[payload.user.role], { replace: true });
+        return;
+      }
 
       navigate('/verify-otp', {
         replace: true,

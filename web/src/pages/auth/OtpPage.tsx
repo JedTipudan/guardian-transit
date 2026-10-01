@@ -41,6 +41,7 @@ export default function OtpPage() {
   const ttl = meta?.otp.ttlSeconds ?? 300;
 
   const [digits, setDigits] = useState<string[]>(() => Array.from({ length }, () => ''));
+  const [devCode, setDevCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [attemptsLeft, setAttemptsLeft] = useState<number | null>(null);
   const [pending, setPending] = useState(false);
@@ -51,6 +52,22 @@ export default function OtpPage() {
   useEffect(() => {
     setDigits(Array.from({ length }, () => ''));
   }, [length]);
+
+  // Poll the dev-hint endpoint when SMS_PROVIDER=dev so the code is visible in the UI
+  useEffect(() => {
+    if (meta?.smsProvider !== 'dev' || !phone) return;
+    let active = true;
+    const poll = () => {
+      api
+        .get<{ code: string }>('/auth/otp/dev-hint', { query: { phone } })
+        .then((r) => { if (active) setDevCode(r.code); })
+        .catch(() => undefined);
+    };
+    poll();
+    const timer = window.setInterval(poll, 4000);
+    return () => { active = false; window.clearInterval(timer); };
+  // re-run when meta loads (it starts null then resolves)
+  }, [meta, phone]);
 
   // One shared ticker drives both the code-expiry and the resend cooldown.
   useEffect(() => {
@@ -195,6 +212,12 @@ export default function OtpPage() {
             </div>
 
             <form className="flex flex-col gap-5" onSubmit={onSubmit} noValidate>
+              {devCode ? (
+                <div className="flex items-center gap-2 rounded-[10px] bg-amber-50 px-3 py-2.5 text-[13px] text-amber-800 ring-1 ring-amber-200">
+                  <Icon name="terminal" size={15} className="shrink-0" />
+                  <span>Dev mode — your code is <span className="font-mono font-bold tracking-widest">{devCode}</span></span>
+                </div>
+              ) : null}
               <div className="flex flex-wrap justify-between gap-2" role="group" aria-label="Verification code">
                 {digits.map((digit, index) => (
                   <input
