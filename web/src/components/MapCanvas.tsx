@@ -150,6 +150,7 @@ export function MapCanvas({
   const leafletRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const layersRef = useRef<L.Layer[]>([]);
+  const hasViewRef = useRef(false);
 
   useEffect(() => {
     if (!resolvedTileUrl || !leafletRef.current) return;
@@ -199,10 +200,10 @@ export function MapCanvas({
 
     if (points.length > 0) {
       map.fitBounds(L.latLngBounds(points), { padding: [40, 40], maxZoom: 16 });
-    } else if (!map.getCenter().equals([0, 0])) {
-      // keep current view
-    } else {
+      hasViewRef.current = true;
+    } else if (!hasViewRef.current) {
       map.setView([14.5995, 120.9842], 13); // Manila default
+      hasViewRef.current = true;
     }
 
     return () => {
