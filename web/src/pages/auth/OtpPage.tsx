@@ -259,6 +259,12 @@ export default function OtpPage() {
                 </p>
               ) : null}
 
+              {meta?.smsProvider === 'dev' ? (
+                <p className="rounded-[12px] bg-primary-soft px-4 py-3 text-center text-[13px] text-primary">
+                  Dev mode — use code <span className="font-bold tracking-widest">123456</span>
+                </p>
+              ) : null}
+
               <Button type="submit" block loading={pending} disabled={!complete || expired}>
                 Verify Code
               </Button>
