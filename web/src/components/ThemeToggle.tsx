@@ -3,14 +3,16 @@ import { Icon } from './Icon';
 
 export function ThemeToggle({ className = '' }: { className?: string }) {
   const { theme, toggle } = useTheme();
+  const isDark = theme === 'dark';
   return (
     <button
       type="button"
       onClick={toggle}
-      aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-      className={`flex h-9 w-9 items-center justify-center rounded-[10px] text-muted transition hover:bg-canvas-alt hover:text-heading ${className}`}
+      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      className={`flex items-center gap-1.5 rounded-[10px] border border-border bg-canvas-alt px-3 py-1.5 text-[12px] font-semibold text-muted transition hover:text-heading ${className}`}
     >
-      <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} />
+      <Icon name={isDark ? 'sun' : 'moon'} size={14} />
+      {isDark ? 'Light' : 'Dark'}
     </button>
   );
 }
