@@ -114,8 +114,10 @@ html.dark textarea::placeholder {
   color: var(--color-muted) !important;
 }
 
-/* Skeleton shimmer */
-html.dark .gt-skeleton {
+/* Heading xl uses navy which is invisible in dark mode */
+html.dark .gt-heading-xl {
+  color: var(--color-heading) !important;
+}
   background: linear-gradient(90deg, #1c2130 25%, #222840 50%, #1c2130 75%) !important;
   background-size: 200% 100% !important;
 }
