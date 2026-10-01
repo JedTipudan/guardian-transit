@@ -118,6 +118,9 @@ html.dark textarea::placeholder {
 html.dark .gt-heading-xl {
   color: var(--color-heading) !important;
 }
+
+/* Skeleton shimmer */
+html.dark .gt-skeleton {
   background: linear-gradient(90deg, #1c2130 25%, #222840 50%, #1c2130 75%) !important;
   background-size: 200% 100% !important;
 }
