@@ -5,6 +5,7 @@ import { MetaProvider } from './state/MetaContext';
 import { NotificationsProvider } from './state/NotificationsContext';
 import { ToastProvider } from './state/ToastContext';
 import { BookingProvider } from './state/BookingContext';
+import { ThemeProvider } from './state/ThemeContext';
 import { RequireAuth, RedirectIfAuthed } from './components/Guards';
 import { PageLoader } from './components/ui';
 import { PublicLayout } from './components/layout/PublicLayout';
@@ -94,6 +95,7 @@ function Screen({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <ThemeProvider>
       <AuthProvider>
         <MetaProvider>
           <NotificationsProvider>
@@ -530,6 +532,7 @@ export default function App() {
           </NotificationsProvider>
         </MetaProvider>
       </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }

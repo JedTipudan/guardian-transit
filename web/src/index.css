@@ -44,6 +44,27 @@
   --shadow-pop: 0 18px 48px 0 rgba(16, 40, 70, 0.14);
 }
 
+/* Dark mode overrides */
+.dark {
+  --color-canvas: #0f1117;
+  --color-canvas-alt: #13161e;
+  --color-surface: #1a1d27;
+  --color-border: #2a2f3d;
+  --color-heading: #e8edf5;
+  --color-muted: #8a96aa;
+  --color-primary-soft: #1a2540;
+  --color-navy: #1e2d45;
+  --color-navy-text: #6b82a0;
+  --color-success-soft: #0d2318;
+  --color-danger-soft: #2a1018;
+  --color-warning-soft: #2a1f08;
+  --color-disabled: #2a2f3d;
+  --color-map: #1a1f2e;
+  --color-map-green: #1a2520;
+  --shadow-card: 0 6px 24px 0 rgba(0, 0, 0, 0.3);
+  --shadow-pop: 0 18px 48px 0 rgba(0, 0, 0, 0.5);
+}
+
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;

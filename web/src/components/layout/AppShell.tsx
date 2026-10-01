@@ -6,6 +6,7 @@ import { Icon } from '../Icon';
 import { Avatar } from '../ui';
 import { useAuth } from '../../state/AuthContext';
 import { useNotifications } from '../../state/NotificationsContext';
+import { ThemeToggle } from '../ThemeToggle';
 
 export interface ShellNavItem {
   to: string;
@@ -113,6 +114,7 @@ export function AppShell({
                   </span>
                 ) : null}
               </Link>
+              <ThemeToggle />
               <span className="hidden items-center gap-3 sm:flex">
                 <Avatar name={displayName} src={user?.avatarUrl} size={36} tone="navy" />
                 <span className="text-[13px] font-semibold text-heading">{displayName}</span>

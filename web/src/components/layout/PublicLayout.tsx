@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Icon } from '../Icon';
+import { ThemeToggle } from '../ThemeToggle';
 
 export function BrandIdentity({ size = 'md' }: { size?: 'sm' | 'md' }) {
   return (
@@ -55,6 +56,7 @@ export function PublicHeader() {
           </nav>
 
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <Link to="/login" className="gt-btn gt-btn-secondary hidden sm:inline-flex">
               Login
             </Link>

@@ -2,6 +2,7 @@ import { type ReactNode } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Icon } from '../Icon';
 import { ConnectionBanner } from './ConnectionBanner';
+import { ThemeToggle } from '../ThemeToggle';
 
 const tabs = [
   { to: '/student', label: 'Home', icon: 'home', end: true },
@@ -83,6 +84,7 @@ export function StudentHeader({
           {subtitle ? <p className="truncate text-[12px] text-muted">{subtitle}</p> : null}
         </div>
         {right}
+        <ThemeToggle />
       </div>
     </header>
   );

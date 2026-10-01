@@ -6,6 +6,7 @@ import { Icon } from '../Icon';
 import { Avatar } from '../ui';
 import { useAuth } from '../../state/AuthContext';
 import { useNotifications } from '../../state/NotificationsContext';
+import { ThemeToggle } from '../ThemeToggle';
 
 const nav = [
   { to: '/parent', label: 'Dashboard', icon: 'layout-dashboard', end: true },
@@ -107,6 +108,7 @@ export function ParentShell({ children }: { children?: ReactNode }) {
                     </span>
                   ) : null}
                 </Link>
+                <ThemeToggle />
                 <Link to="/parent/profile" className="flex items-center gap-3" aria-label="Open profile">
                   <Avatar name={displayName} src={user?.avatarUrl} size={36} />
                   <span className="hidden text-[13px] font-semibold text-heading sm:inline">{displayName}</span>
