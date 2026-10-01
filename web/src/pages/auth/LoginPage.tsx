@@ -9,7 +9,7 @@ import { roleHome } from '../../components/Guards';
 import { useDocumentTitle } from '../../lib/hooks';
 
 export default function LoginPage() {
-  useDocumentTitle('Parent Login · Guardian Transit');
+  useDocumentTitle('Login · Guardian Transit');
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
@@ -58,12 +58,12 @@ export default function LoginPage() {
       <section className="mx-auto grid max-w-[1440px] items-center gap-10 px-6 py-10 md:px-10 lg:grid-cols-2 lg:gap-12 lg:py-16 xl:px-20">
         {/* Left: navy intro (desktop only) */}
         <div className="hidden flex-col gap-6 rounded-[20px] bg-navy p-8 lg:flex">
-          <p className="text-[12px] font-bold uppercase tracking-wide text-navy-text">Parent web access</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-navy-text">Guardian Transit</p>
           <h1 className="text-[40px] font-bold leading-[1.2] text-white">
-            Your child’s journey. Your peace of mind.
+            Safe rides. Connected families.
           </h1>
           <p className="text-[16px] text-navy-text">
-            Follow Maya’s active ride with a verified BaoBao driver, directly from your browser.
+            Students, parents, drivers, and admins all sign in here.
           </p>
 
           <MapCanvas
@@ -80,7 +80,7 @@ export default function LoginPage() {
           <div className="flex flex-col gap-2">
             <p className="text-[13px] font-bold text-white">No app installation needed.</p>
             <p className="text-[12px] text-navy-text">
-              Private monitoring for connected guardians. Location is shared during active trips only.
+              Live trip monitoring, PIN-verified pickups, and real-time notifications.
             </p>
           </div>
         </div>
@@ -88,11 +88,11 @@ export default function LoginPage() {
         {/* Right: form */}
         <div className="rounded-[20px] border border-border bg-white p-6 sm:p-8 lg:border-0 lg:bg-transparent lg:p-0">
           <div className="flex flex-col gap-[22px]">
-            <span className="gt-badge gt-badge-primary self-start">PARENT ACCESS</span>
+            <span className="gt-badge gt-badge-primary self-start">SIGN IN</span>
 
             <div className="flex flex-col gap-2.5">
               <h2 className="text-[30px] font-bold leading-[1.2] text-heading">Welcome Back</h2>
-              <p className="text-[14px] text-muted">Sign in to stay connected to your child’s journey.</p>
+              <p className="text-[14px] text-muted">Sign in to your Guardian Transit account.</p>
             </div>
 
             <form className="flex flex-col gap-[22px]" onSubmit={onSubmit} noValidate>
@@ -164,9 +164,9 @@ export default function LoginPage() {
               <div className="gt-notice gt-notice-primary">
                 <Icon name="info" size={20} className="mt-0.5 shrink-0 text-primary" />
                 <p>
-                  <span className="font-bold text-heading">Connected from the first ride</span>
+                  <span className="font-bold text-heading">All roles, one login</span>
                   <br />
-                  Use your parent account linked to your child. No PWA installation is needed to monitor a trip.
+                  Students, parents, drivers, and admins all sign in here.
                 </p>
               </div>
 
