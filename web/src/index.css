@@ -56,13 +56,104 @@
   --color-navy: #1e2d45;
   --color-navy-text: #6b82a0;
   --color-success-soft: #0d2318;
+  --color-success: #22c47a;
   --color-danger-soft: #2a1018;
+  --color-danger: #f05066;
   --color-warning-soft: #2a1f08;
+  --color-warning: #f0a030;
   --color-disabled: #2a2f3d;
   --color-map: #1a1f2e;
   --color-map-green: #1a2520;
   --shadow-card: 0 6px 24px 0 rgba(0, 0, 0, 0.3);
   --shadow-pop: 0 18px 48px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* Dark mode overrides for hardcoded Tailwind classes */
+.dark body {
+  background: var(--color-canvas-alt);
+  color: var(--color-heading);
+}
+
+.dark .bg-white {
+  background-color: var(--color-surface) !important;
+}
+
+.dark .bg-navy {
+  background-color: #1a2d45 !important;
+}
+
+.dark .border-border {
+  border-color: var(--color-border) !important;
+}
+
+.dark .text-heading {
+  color: var(--color-heading) !important;
+}
+
+.dark .text-muted {
+  color: var(--color-muted) !important;
+}
+
+.dark .text-navy {
+  color: #a8c0d8 !important;
+}
+
+.dark .bg-canvas-alt {
+  background-color: var(--color-canvas-alt) !important;
+}
+
+.dark .bg-canvas {
+  background-color: var(--color-canvas) !important;
+}
+
+.dark .bg-primary-soft {
+  background-color: var(--color-primary-soft) !important;
+}
+
+.dark .bg-success-soft {
+  background-color: var(--color-success-soft) !important;
+}
+
+.dark .bg-danger-soft {
+  background-color: var(--color-danger-soft) !important;
+}
+
+.dark .bg-warning-soft {
+  background-color: var(--color-warning-soft) !important;
+}
+
+.dark .text-success {
+  color: var(--color-success) !important;
+}
+
+.dark .text-danger {
+  color: var(--color-danger) !important;
+}
+
+.dark .text-warning {
+  color: var(--color-warning) !important;
+}
+
+.dark .border-border {
+  border-color: var(--color-border) !important;
+}
+
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: var(--color-surface);
+  color: var(--color-heading);
+  border-color: var(--color-border);
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: var(--color-muted);
+}
+
+.dark .gt-skeleton {
+  background: linear-gradient(90deg, #1e2330 25%, #252a38 50%, #1e2330 75%);
+  background-size: 200% 100%;
 }
 
 @layer base {
