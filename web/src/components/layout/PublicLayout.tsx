@@ -6,15 +6,11 @@ import { ThemeToggle } from '../ThemeToggle';
 export function BrandIdentity({ size = 'md' }: { size?: 'sm' | 'md' }) {
   return (
     <span className="flex items-center gap-2.5">
-      <span className="flex h-[42px] w-[42px] items-center justify-center rounded-[12px] bg-primary-soft text-primary">
-        <Icon name="shield-check" size={26} />
-      </span>
-      <span
-        className={`text-navy ${size === 'md' ? 'text-[17px] font-bold' : 'text-[15px] font-bold'}`}
-        style={{ lineHeight: 1.45 }}
-      >
-        Guardian Transit
-      </span>
+      <img
+        src="/logo.png"
+        alt="Guardian Transit"
+        className={size === 'md' ? 'h-[42px] w-auto' : 'h-[32px] w-auto'}
+      />
     </span>
   );
 }
