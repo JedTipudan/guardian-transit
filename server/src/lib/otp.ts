@@ -62,7 +62,7 @@ export async function issueOtp(
     );
   }
 
-  const code = config.isProd ? randomDigits(config.otp.length) : '123456';
+  const code = config.sms.provider === 'dev' ? '123456' : randomDigits(config.otp.length);
   const expiresAt = new Date(Date.now() + config.otp.ttlSeconds * 1000);
 
   await prisma.otpCode.create({

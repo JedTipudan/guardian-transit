@@ -388,6 +388,22 @@ router.post(
     }
 
     if (user.status === 'PENDING') {
+      // Dev mode: activate immediately, no OTP needed
+      if (config.sms.provider === 'dev') {
+        const activated = await prisma.user.update({
+          where: { id: user.id },
+          data: { status: 'ACTIVE', lastLoginAt: new Date() },
+          include: {
+            studentProfile: true,
+            parentProfile: true,
+            driverProfile: { include: { vehicles: true, verifications: true } },
+          },
+        });
+        const session = await createSession(activated.id, activated.role, sessionMeta(req));
+        setAuthCookies(res, session.accessToken, session.refreshToken, session.refreshExpiresAt);
+        sendOk(res, { user: toSafeUser(activated), requiresOtp: false });
+        return;
+      }
       const otp = await issueOtp(user.phone, 'LOGIN', { name: user.firstName });
       sendOk(res, {
         requiresOtp: true,
