@@ -296,9 +296,6 @@ export default function DriverLogin({ mode = 'login' }: DriverLoginProps) {
                     <Link to="/login" className="font-semibold text-primary hover:underline">
                       Parent / guardian login
                     </Link>
-                    <Link to="/student/login" className="font-semibold text-primary hover:underline">
-                      Student login
-                    </Link>
                     <Link to="/" className="font-semibold text-primary hover:underline">
                       Back to home
                     </Link>
@@ -529,9 +526,6 @@ export default function DriverLogin({ mode = 'login' }: DriverLoginProps) {
                 <div className="flex flex-wrap gap-x-4 gap-y-1 border-t border-border pt-4 text-[12px] text-muted">
                   <Link to="/login" className="font-semibold text-primary hover:underline">
                     Parent / guardian login
-                  </Link>
-                  <Link to="/student/login" className="font-semibold text-primary hover:underline">
-                    Student login
                   </Link>
                 </div>
               </form>

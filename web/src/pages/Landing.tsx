@@ -188,7 +188,7 @@ export default function Landing() {
               Guardian Transit helps students travel home safely while giving parents peace of mind wherever they are.
             </p>
             <div className="flex flex-wrap gap-3">
-              <LinkButton to="/student/login" trailingIcon="arrow-right">
+              <LinkButton to="/login" trailingIcon="arrow-right">
                 Book a Safe Ride
               </LinkButton>
               <LinkButton to="/login" variant="secondary">

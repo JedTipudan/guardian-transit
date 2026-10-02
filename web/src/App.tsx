@@ -21,8 +21,8 @@ const OtpPage = lazy(() => import('./pages/auth/OtpPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
-const StudentLogin = lazy(() => import('./pages/student/StudentLogin'));
 const StudentRegister = lazy(() => import('./pages/student/StudentRegister'));
+const DriverLogin = lazy(() => import('./pages/driver/DriverLogin'));
 const StudentOnboarding = lazy(() => import('./pages/student/StudentOnboarding'));
 const StudentHome = lazy(() => import('./pages/student/StudentHome'));
 const StudentBookPickup = lazy(() => import('./pages/student/StudentBookPickup'));
@@ -44,7 +44,6 @@ const ParentProfile = lazy(() => import('./pages/parent/ParentProfile'));
 const ParentGuardians = lazy(() => import('./pages/parent/ParentGuardians'));
 const ParentRideDetail = lazy(() => import('./pages/parent/ParentRideDetail'));
 
-const DriverLogin = lazy(() => import('./pages/driver/DriverLogin'));
 const DriverDashboard = lazy(() => import('./pages/driver/DriverDashboard'));
 const DriverVerification = lazy(() => import('./pages/driver/DriverVerification'));
 const DriverActiveRide = lazy(() => import('./pages/driver/DriverActiveRide'));
@@ -163,31 +162,11 @@ export default function App() {
                       }
                     />
                     <Route
-                      path="/student/login"
-                      element={
-                        <Screen>
-                          <RedirectIfAuthed>
-                            <StudentLogin />
-                          </RedirectIfAuthed>
-                        </Screen>
-                      }
-                    />
-                    <Route
                       path="/student/register"
                       element={
                         <Screen>
                           <RedirectIfAuthed>
                             <StudentRegister />
-                          </RedirectIfAuthed>
-                        </Screen>
-                      }
-                    />
-                    <Route
-                      path="/driver/login"
-                      element={
-                        <Screen>
-                          <RedirectIfAuthed>
-                            <DriverLogin />
                           </RedirectIfAuthed>
                         </Screen>
                       }
