@@ -21,8 +21,6 @@ const OtpPage = lazy(() => import('./pages/auth/OtpPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
-const StudentRegister = lazy(() => import('./pages/student/StudentRegister'));
-const DriverLogin = lazy(() => import('./pages/driver/DriverLogin'));
 const StudentOnboarding = lazy(() => import('./pages/student/StudentOnboarding'));
 const StudentHome = lazy(() => import('./pages/student/StudentHome'));
 const StudentBookPickup = lazy(() => import('./pages/student/StudentBookPickup'));
@@ -161,26 +159,10 @@ export default function App() {
                         </Screen>
                       }
                     />
-                    <Route
-                      path="/student/register"
-                      element={
-                        <Screen>
-                          <RedirectIfAuthed>
-                            <StudentRegister />
-                          </RedirectIfAuthed>
-                        </Screen>
-                      }
-                    />
-                    <Route
-                      path="/driver/register"
-                      element={
-                        <Screen>
-                          <RedirectIfAuthed>
-                            <DriverLogin mode="register" />
-                          </RedirectIfAuthed>
-                        </Screen>
-                      }
-                    />
+                    <Route path="/student/register" element={<Navigate to="/register" replace />} />
+                    <Route path="/driver/register" element={<Navigate to="/register" replace />} />
+                    <Route path="/driver/login" element={<Navigate to="/login" replace />} />
+                    <Route path="/student/login" element={<Navigate to="/login" replace />} />
                     <Route
                       path="/splash"
                       element={<Navigate to="/onboarding" replace />}
