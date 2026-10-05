@@ -13,13 +13,11 @@
  *
  * Run: npm run db:seed --workspace server
  */
-import {
-  PrismaClient,
+import { PrismaClient,
   SafetyReportCategory,
   VerificationStatus,
 } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-import { encryptPin } from '../src/services/rides';
 
 const prisma = new PrismaClient();
 
@@ -493,64 +491,7 @@ async function main(): Promise<void> {
       });
     }
 
-    // ---------------------------------------------------------- active ride
-    const requested = new Date(Date.now() - 6 * 60_000);
-    const active = await prisma.ride.create({
-      data: {
-        code: 'GT-1001',
-        studentId: studentProfile.id,
-        parentId: parentProfile.id,
-        driverId: ramon.driverId,
-        vehicleId: ramon.vehicleId,
-        status: 'DRIVER_ASSIGNED',
-        pickupLabel: SCHOOL.label,
-        pickupAddress: SCHOOL.address,
-        pickupLat: SCHOOL.lat,
-        pickupLng: SCHOOL.lng,
-        destinationLabel: HOME.label,
-        destinationAddress: HOME.address,
-        destinationLat: HOME.lat,
-        destinationLng: HOME.lng,
-        fare: 45,
-        distanceKm: 1.4,
-        durationMin: 8,
-        pinHash: null,
-        requestedAt: requested,
-        acceptedAt: new Date(requested.getTime() + 45_000),
-      },
-    });
-
-    const pin = '482913';
-    await prisma.ride.update({ where: { id: active.id }, data: { pinHash: encryptPin(pin) } });
-
-    await prisma.rideEvent.createMany({
-      data: [
-        { rideId: active.id, type: 'REQUESTED', message: 'Ride requested.', createdAt: requested },
-        {
-          rideId: active.id,
-          type: 'DRIVER_ASSIGNED',
-          message: 'Ramon Cruz accepted the ride and is on the way.',
-          createdAt: new Date(requested.getTime() + 45_000),
-        },
-      ],
-    });
-
-    await prisma.rideLocation.createMany({
-      data: Array.from({ length: 4 }).map((_, step) => ({
-        rideId: active.id,
-        lat: SCHOOL.lat + 0.0012 * (step + 1),
-        lng: SCHOOL.lng - 0.0008 * (step + 1),
-        speedKph: 18 + step * 2,
-        recordedAt: new Date(Date.now() - (3 - step) * 60_000),
-      })),
-    });
-
-    await prisma.driverProfile.update({
-      where: { id: ramon.driverId },
-      data: { lat: SCHOOL.lat + 0.0048, lng: SCHOOL.lng - 0.0032, lastLocationAt: new Date() },
-    });
-
-    console.log(`  · 32 completed rides (32 Guardian Points) + active ride ${active.code}`);
+    console.log('  · 32 completed rides (32 Guardian Points)');
   }
 
   // ---------------------------------------------------------- notifications
@@ -563,9 +504,8 @@ async function main(): Promise<void> {
         {
           userId: student.id,
           type: 'RIDE_ACCEPTED',
-          title: 'Driver on the way',
-          body: 'Ramon Cruz accepted your ride and is heading to Gate A.',
-          data: { rideCode: 'GT-1001' },
+          title: 'Welcome back, Maya!',
+          body: 'Your account is ready. Book a ride to get started.',
         },
         {
           userId: student.id,
@@ -582,9 +522,8 @@ async function main(): Promise<void> {
         {
           userId: parent.id,
           type: 'TRIP_UPDATE',
-          title: 'Maya’s ride is active',
-          body: 'Live tracking is available from your dashboard.',
-          data: { rideCode: 'GT-1001' },
+          title: 'Guardian access active',
+          body: 'You can follow Maya\'s rides in real time from your dashboard.',
         },
         {
           userId: parent.id,
