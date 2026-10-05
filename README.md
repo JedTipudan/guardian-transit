@@ -135,6 +135,8 @@ Seeded automatically by `npm run db:seed`:
 
 > **OTP in dev mode** — the verification code is always `123456`. The OTP page shows a blue hint banner when `SMS_PROVIDER=dev`. In production with a real SMS provider the hint is hidden and a random code is sent.
 
+> **Login** — all roles use the unified `/login` page. There are no separate student/driver login pages.
+
 ---
 
 ## Available Scripts
@@ -291,6 +293,8 @@ npm install && cd server && npx prisma generate && npx tsc -p tsconfig.json
 ```
 cd server && npx prisma migrate deploy && npx prisma db seed && node dist/src/index.js
 ```
+
+> The seed runs on every deploy but is safe to re-run — all inserts use `upsert` and ride/notification blocks are guarded by `if (count === 0)` checks. No duplicate data is created.
 
 **Required environment variables on Railway:**
 
